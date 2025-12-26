@@ -131,6 +131,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> photo_exts = {".jpg", ".jpeg", ".png", ".heic", ".dng", ".nef", ".cr2", ".cr3", ".arw", ".orf", ".raf"};
     std::vector<std::string> video_exts = {".mov", ".mp4", ".m4v", ".avi", ".mts", ".m2ts", ".3gp", ".mkv"};
 
+    std::cout << "scanning directory for media files...\n";
+
     for (const auto& entry : fs::directory_iterator(dir)) {
         if (!entry.is_regular_file()) continue;
 
@@ -140,6 +142,8 @@ int main(int argc, char* argv[]) {
         bool is_media = (std::find(photo_exts.begin(), photo_exts.end(), ext) != photo_exts.end()) ||
                         (std::find(video_exts.begin(), video_exts.end(), ext) != video_exts.end());
         if (!is_media) continue;
+
+        std::cout << "reading metadata: " << entry.path().filename().string() << std::endl;
 
         int64_t ts_ms = get_file_timestamp(entry.path());
         if (ts_ms == 0) {
@@ -155,6 +159,8 @@ int main(int argc, char* argv[]) {
         std::cout << "no media found\n";
         return 1;
     }
+
+    std::cout << "\nsorting " << items.size() << " files by timestamp...\n\n";
 
     // sort all items by timestamp ascending
     std::sort(items.begin(), items.end(),
@@ -173,7 +179,7 @@ int main(int argc, char* argv[]) {
         fs::path new_path = dir / new_name;
 
         if (dry_run) {
-            std::cout << "[dry run] " << m.path.filename().string()
+            std::cout << "[dry-run] " << m.path.filename().string()
                       << " -> " << new_name.string() << "\n";
         } else {
             if (fs::exists(new_path)) {
