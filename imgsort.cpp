@@ -30,7 +30,7 @@ std::string run_command(const std::string& cmd) {
 
 // parse iso8601 timestamp
 int64_t parse_iso8601_to_millis(const std::string& dt) {
-    // Handle both "2025-12-25T16:07:57.123-0700" and "2025-12-25T16:07:57.-0700" (empty fraction)
+    // handle both "2025-12-25T16:07:57.123-0700" and "2025-12-25T16:07:57.-0700" (empty fraction)
     std::regex re(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?([+-]\d{2})?(\d{2})?)");
     std::smatch match;
     if (!std::regex_match(dt, match, re)) return 0;
@@ -41,10 +41,16 @@ int64_t parse_iso8601_to_millis(const std::string& dt) {
     int hour = std::stoi(match[4]);
     int min = std::stoi(match[5]);
     int sec = std::stoi(match[6]);
+
+    // extract milliseconds from fractional seconds (if present in EXIF)
+    // this provides ranking precision when rapidly taking photos in burst mode.
+    // if camera doesn't write milliseconds to EXIF, files taken in the same second
+    // will have identical timestamps and be sorted by filesystem order (usually filename).
+    // genuinely the only way i know how to solve this without crashing out or overcomplicating stuff.
     int millis = 0;
     if (match[7].matched) {
         std::string frac = match[7];
-        if (!frac.empty()) {  // Only parse if there are actual digits
+        if (!frac.empty()) {  // only parse if there are actual digits
             while (frac.size() < 3) frac += '0';
             millis = std::stoi(frac.substr(0,3));
         }
