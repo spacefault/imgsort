@@ -30,7 +30,8 @@ std::string run_command(const std::string& cmd) {
 
 // parse iso8601 timestamp
 int64_t parse_iso8601_to_millis(const std::string& dt) {
-    std::regex re(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?([+-]\d{2})?(\d{2})?)");
+    // Handle both "2025-12-25T16:07:57.123-0700" and "2025-12-25T16:07:57.-0700" (empty fraction)
+    std::regex re(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?([+-]\d{2})?(\d{2})?)");
     std::smatch match;
     if (!std::regex_match(dt, match, re)) return 0;
 
@@ -43,8 +44,10 @@ int64_t parse_iso8601_to_millis(const std::string& dt) {
     int millis = 0;
     if (match[7].matched) {
         std::string frac = match[7];
-        while (frac.size() < 3) frac += '0';
-        millis = std::stoi(frac.substr(0,3));
+        if (!frac.empty()) {  // Only parse if there are actual digits
+            while (frac.size() < 3) frac += '0';
+            millis = std::stoi(frac.substr(0,3));
+        }
     }
 
     int tz_offset_sec = 0;
@@ -71,7 +74,7 @@ int64_t get_file_timestamp(const fs::path& file) {
     std::string ext = file.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-    bool use_quicktime_api = (ext == ".heic" || ext == ".mov" || ext == ".mp4" || ext == ".m4v");
+    bool use_quicktime_api = (ext == ".mov" || ext == ".mp4" || ext == ".m4v");
 
     std::string cmd = "exiftool ";
     if (use_quicktime_api) cmd += "-api QuickTimeUTC ";
