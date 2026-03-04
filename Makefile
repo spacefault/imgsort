@@ -13,6 +13,13 @@ $(target): $(src)
 clean:
 	rm -f $(target)
 
+install:
+	mkdir -p ~/.bin
+	cp $(target) ~/.bin
+
+uninstall:
+	rm ~/.bin/imgsort
+
 rebuild: clean all
 
 .PHONY: all clean rebuild
